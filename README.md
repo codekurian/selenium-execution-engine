@@ -1,372 +1,255 @@
 # Selenium Execution Engine
 
-A Spring Boot application that provides a REST API for executing Selenium-based automation scripts. Built with Java 17 and supports Java 21, containerized with RHEL 8 and Oracle JDK.
+A simple Spring Boot application that executes Java Selenium test scripts by taking them directly in the API payload or uploading Java files.
 
-## Features
+## 🚀 **How It Works**
 
-- **REST API for Selenium script execution**
-- **Raw script execution** - Execute complete Selenium scripts as raw content
-- **File upload support** - Upload and execute script files directly
-- **Dynamic script compilation** - Java scripts compiled and executed at runtime
-- **Multiple script types** - Support for Java and JavaScript
-- **Support for Chrome and Firefox browsers**
-- **Headless mode support**
-- **Screenshot capture capability**
-- **Configurable timeouts and browser options**
-- **Docker containerization with RHEL 8 base image**
+1. **Send Test Script**: Send a Java test script in the API payload OR upload a Java file
+2. **Save as File**: The script gets saved as a `.java` file
+3. **Compile**: The Java file gets compiled dynamically
+4. **Execute**: The compiled class gets executed with Selenium WebDriver
+5. **Return Result**: Execution results are returned as JSON response
 
-## Prerequisites
+## 📋 **API Endpoints**
 
-- Java 17 or higher
-- Gradle 8.5+
-- Docker (for containerized deployment)
+### **POST** `/api/selenium/execute-test` (JSON Payload)
 
-## Quick Start
-
-### Local Development
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd selenium-execution-engine
-```
-
-2. Build the project:
-```bash
-./gradlew build
-```
-
-3. Run the application:
-```bash
-./gradlew bootRun
-```
-
-The application will start on `http://localhost:8080`
-
-### Docker Deployment
-
-1. Build the Docker image:
-```bash
-docker build -t selenium-execution-engine .
-```
-
-2. Run the container:
-```bash
-docker run -p 8080:8080 selenium-execution-engine
-```
-
-## API Endpoints
-
-### 1. Health Check
-```bash
-GET /api/selenium/health
-```
-
-### 2. Execute Simple Actions
-```bash
-POST /api/selenium/execute
-Content-Type: application/json
-
+**Request Body:**
+```json
 {
-  "url": "https://example.com",
+  "scriptName": "MyTest",
+  "scriptContent": "import org.openqa.selenium.WebDriver;\nimport org.openqa.selenium.By;\nimport org.openqa.selenium.WebElement;\n\npublic class MyTest {\n    public static Object execute(WebDriver driver) {\n        try {\n            driver.get(\"https://www.example.com\");\n            String title = driver.getTitle();\n            System.out.println(\"Page title: \" + title);\n            return \"Test completed successfully. Title: \" + title;\n        } catch (Exception e) {\n            throw new RuntimeException(\"Test failed\", e);\n        }\n    }\n}",
   "browser": "chrome",
   "headless": true,
-  "timeoutSeconds": 30,
-  "actions": [
-    "click:#submit-button",
-    "type:#search-input:search term",
-    "wait:5"
-  ],
-  "screenshotPath": "/tmp/screenshots/result.png"
+  "timeoutSeconds": 30
 }
 ```
 
-### 3. Execute Raw Script (JSON)
+### **POST** `/api/selenium/execute-file` (File Upload)
+
+**Request (multipart/form-data):**
 ```bash
-POST /api/selenium/execute-script
-Content-Type: application/json
-
-{
-  "scriptContent": "driver.get(\"https://www.google.com\"); WebElement searchBox = driver.findElement(By.name(\"q\")); searchBox.sendKeys(\"Selenium automation\"); searchBox.submit();",
-  "scriptType": "java",
-  "browser": "chrome",
-  "headless": true,
-  "timeoutSeconds": 30,
-  "screenshotPath": "/tmp/screenshots/result.png"
-}
-```
-
-### 4. Execute Script File (File Upload)
-```bash
-POST /api/selenium/execute-file
-Content-Type: multipart/form-data
-
-# Upload a script file with parameters
 curl -X POST http://localhost:8081/api/selenium/execute-file \
-  -F "file=@scripts/simple-navigation.java" \
-  -F "scriptType=java" \
+  -F "file=@YourTest.java" \
   -F "browser=chrome" \
   -F "headless=true" \
   -F "timeoutSeconds=30"
 ```
 
-## Script Examples
-
-### Java Script Example
-```java
-// Navigate to Google
-driver.get("https://www.google.com");
-
-// Find and fill the search box
-WebElement searchBox = driver.findElement(By.name("q"));
-searchBox.sendKeys("Selenium WebDriver");
-
-// Submit the search
-searchBox.submit();
-
-// Wait for results
-WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-wait.until(ExpectedConditions.presenceOfElementLocated(By.id("search")));
-
-// Get the first result
-WebElement firstResult = driver.findElement(By.cssSelector("#search .g:first-child h3"));
-String resultText = firstResult.getText();
-
-System.out.println("First search result: " + resultText);
-```
-
-### JavaScript Example
-```javascript
-// Execute JavaScript in the browser
-return document.title;
-```
-
-## Request Parameters
-
-### Simple Actions API
-- `url` (required): The URL to navigate to
-- `browser` (optional): Browser type ("chrome" or "firefox"), defaults to "chrome"
-- `headless` (optional): Run in headless mode, defaults to true
-- `timeoutSeconds` (optional): Page load timeout, defaults to 30
-- `actions` (optional): Array of actions to perform
-- `screenshotPath` (optional): Path to save screenshot
-
-### Raw Script API
-- `scriptContent` (required): Raw script content to execute
-- `scriptType` (optional): "java", "javascript" (default: "java")
-- `browser` (optional): "chrome", "firefox" (default: "chrome")
-- `headless` (optional): true/false (default: true)
-- `timeoutSeconds` (optional): timeout in seconds (default: 30)
-- `screenshotPath` (optional): path to save screenshot
-- `scriptArguments` (optional): array of arguments to pass to script
-
-### File Upload API
-- `file` (required): The script file to upload
-- `scriptType` (optional): "java", "javascript" (default: "java")
-- `browser` (optional): "chrome", "firefox" (default: "chrome")
+**Parameters:**
+- `file` (required): The Java file to upload
+- `scriptName` (optional): Custom name for the script (uses filename if not provided)
+- `browser` (optional): "chrome" or "firefox" (default: "chrome")
 - `headless` (optional): true/false (default: true)
 - `timeoutSeconds` (optional): timeout in seconds (default: 30)
 - `screenshotPath` (optional): path to save screenshot
 
-### Supported Actions
-
-- `click:selector`: Click on element with CSS selector
-- `type:selector:text`: Type text into element with CSS selector
-- `wait:seconds`: Wait for specified number of seconds
-
-## Response Format
-
-All endpoints return a JSON response with the following structure:
-
+**Response:**
 ```json
 {
   "success": true,
-  "message": "Script executed successfully",
-  "screenshotPath": "/tmp/screenshots/result.png",
+  "message": "Test executed successfully",
   "executionTimeMs": 2500,
-  "pageTitle": "Example Page",
-  "pageUrl": "https://example.com"
+  "pageTitle": "Example Domain",
+  "pageUrl": "https://www.example.com/",
+  "screenshotPath": null
 }
 ```
 
-## Usage Examples
+## 🔧 **Test Script Requirements**
 
-### cURL Examples
+Your Java test script must:
 
-#### Execute Java Script
-```bash
-curl -X POST http://localhost:8081/api/selenium/execute-script \
-  -H "Content-Type: application/json" \
-  -d '{
-    "scriptContent": "driver.get(\"https://www.example.com\"); Thread.sleep(2000); String title = driver.getTitle(); System.out.println(\"Page title: \" + title);",
-    "scriptType": "java",
-    "browser": "chrome",
-    "headless": true,
-    "timeoutSeconds": 30
-  }'
+1. **Have a static `execute` method** that takes a `WebDriver` parameter
+2. **Return an Object** (can be String, Map, etc.)
+3. **Handle exceptions** properly
+4. **Use proper imports** for Selenium classes
+
+**Example Test Script:**
+```java
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
+
+public class MyTest {
+    public static Object execute(WebDriver driver) {
+        try {
+            // Navigate to a page
+            driver.get("https://www.google.com");
+            
+            // Find and interact with elements
+            WebElement searchBox = driver.findElement(By.name("q"));
+            searchBox.sendKeys("Selenium automation");
+            searchBox.submit();
+            
+            // Get results
+            String title = driver.getTitle();
+            System.out.println("Page title: " + title);
+            
+            // Return result
+            return "Test completed successfully. Title: " + title;
+            
+        } catch (Exception e) {
+            throw new RuntimeException("Test failed", e);
+        }
+    }
+}
 ```
 
-#### Execute JavaScript
+## 🚀 **Quick Start**
+
+### **1. Build and Run**
 ```bash
-curl -X POST http://localhost:8081/api/selenium/execute-script \
+# Build the application
+./gradlew build
+
+# Run locally
+./gradlew bootRun
+
+# Or use Docker
+docker-compose up -d
+```
+
+### **2. Test the API**
+
+#### **Test JSON Payload:**
+```bash
+# Make the test script executable
+chmod +x test-initial-integration.sh
+
+# Run the tests
+./test-initial-integration.sh
+```
+
+#### **Test File Upload:**
+```bash
+# Make the test script executable
+chmod +x test-file-upload.sh
+
+# Run the tests
+./test-file-upload.sh
+```
+
+### **3. Manual Test**
+
+#### **JSON Payload:**
+```bash
+curl -X POST http://localhost:8080/api/selenium/execute-test \
   -H "Content-Type: application/json" \
   -d '{
-    "scriptContent": "driver.get(\"https://www.example.com\"); return document.title;",
-    "scriptType": "javascript",
+    "scriptName": "SimpleTest",
+    "scriptContent": "import org.openqa.selenium.WebDriver;\n\npublic class SimpleTest {\n    public static Object execute(WebDriver driver) {\n        driver.get(\"https://www.example.com\");\n        return \"Success: \" + driver.getTitle();\n    }\n}",
     "browser": "chrome",
     "headless": true
   }'
 ```
 
-#### Upload Script File
+#### **File Upload:**
 ```bash
-curl -X POST http://localhost:8081/api/selenium/execute-file \
-  -F "file=@scripts/simple-navigation.java" \
-  -F "scriptType=java" \
+curl -X POST http://localhost:8080/api/selenium/execute-file \
+  -F "file=@SampleTest.java" \
   -F "browser=chrome" \
-  -F "headless=true" \
-  -F "screenshotPath=/tmp/screenshots/result.png"
+  -F "headless=true"
 ```
 
-### Python Example
-```python
-import requests
-import json
+## ⚙️ **Configuration**
 
-url = "http://localhost:8081/api/selenium/execute-script"
-script_content = """
-driver.get("https://www.google.com");
-WebElement searchBox = driver.findElement(By.name("q"));
-searchBox.sendKeys("Selenium automation");
-searchBox.submit();
-Thread.sleep(3000);
-"""
-
-payload = {
-    "scriptContent": script_content,
-    "scriptType": "java",
-    "browser": "chrome",
-    "headless": True,
-    "timeoutSeconds": 30
-}
-
-response = requests.post(url, json=payload)
-result = response.json()
-print(f"Success: {result['success']}")
-print(f"Execution time: {result['executionTimeMs']}ms")
-```
-
-## Configuration
-
-The application can be configured through `application.properties`:
-
+### **Application Properties**
 ```properties
-# Server Configuration
+# Server
 server.port=8080
 
-# Selenium Configuration
+# Selenium
+selenium.scripts.directory=/tmp/test-scripts
+selenium.timeout=30
 selenium.default.browser=chrome
 selenium.default.headless=true
-selenium.default.timeout=30
 selenium.screenshot.directory=/tmp/screenshots
 ```
 
-## Project Structure
+### **Environment Variables**
+```bash
+SERVER_PORT=8080
+SELENIUM_SCRIPTS_DIRECTORY=/tmp/test-scripts
+SELENIUM_TIMEOUT=30
+```
+
+## 📁 **File Structure**
 
 ```
 selenium-execution-engine/
-├── src/
-│   ├── main/
-│   │   ├── java/
-│   │   │   └── com/selenium/
-│   │   │       ├── SeleniumExecutionEngineApplication.java
-│   │   │       ├── controller/
-│   │   │       │   └── SeleniumController.java
-│   │   │       ├── model/
-│   │   │       │   ├── SeleniumRequest.java
-│   │   │       │   ├── SeleniumScriptRequest.java
-│   │   │       │   └── SeleniumResponse.java
-│   │   │       └── service/
-│   │   │           ├── SeleniumService.java
-│   │   │           └── ScriptExecutionService.java
-│   │   └── resources/
-│   │       └── application.properties
-│   └── test/
-│       └── java/
-│           └── com/selenium/
-│               └── SeleniumExecutionEngineApplicationTests.java
-├── scripts/
-│   ├── simple-navigation.java
-│   ├── google-search.java
-│   ├── form-interaction.java
-│   └── example-usage.java
-├── examples/
-│   ├── google-search.java
-│   └── simple-navigation.java
-├── build.gradle
-├── Dockerfile
-├── docker-compose.yml
-├── README.md
-├── API_DOCUMENTATION.md
-├── FILE_UPLOAD_GUIDE.md
-├── test-api.sh
-├── test-raw-script.sh
-└── test-file-upload.sh
+├── src/main/java/com/selenium/
+│   ├── controller/
+│   │   └── SeleniumController.java          # API endpoints
+│   ├── model/
+│   │   ├── TestScriptRequest.java           # Request model
+│   │   └── SeleniumResponse.java            # Response model
+│   └── service/
+│       └── TestExecutionService.java        # Test execution logic
+├── src/main/resources/
+│   └── application.properties               # Configuration
+├── Dockerfile                               # Docker image
+├── docker-compose.yml                       # Docker deployment
+├── SampleTest.java                          # Sample test file
+├── test-initial-integration.sh              # JSON payload test script
+├── test-file-upload.sh                      # File upload test script
+└── README.md                                # This file
 ```
 
-## Available Scripts
+## 🔍 **Features**
 
-The project includes several example scripts in the `scripts/` directory:
+- ✅ **Simple API**: Single endpoint for test execution
+- ✅ **File Upload**: Upload actual Java files
+- ✅ **JSON Payload**: Send script content directly
+- ✅ **File-based**: Scripts saved as files for debugging
+- ✅ **Dynamic Compilation**: Java files compiled on-the-fly
+- ✅ **Multiple Browsers**: Support for Chrome and Firefox
+- ✅ **Headless Mode**: Run tests without GUI
+- ✅ **Timeout Control**: Configurable execution timeouts
+- ✅ **Error Handling**: Proper error reporting
+- ✅ **Docker Support**: Easy containerized deployment
 
-- `simple-navigation.java` - Basic navigation example
-- `google-search.java` - Google search automation
-- `form-interaction.java` - Form filling example
-- `example-usage.java` - Comprehensive example
+## 🛡️ **Security Considerations**
 
-## Testing
+⚠️ **Warning**: This approach uses dynamic compilation, which can be a security risk if not properly controlled.
 
-Run the test scripts to verify functionality:
+**Recommendations:**
+- Use in controlled environments only
+- Validate script content before execution
+- Implement proper access controls
+- Consider using pre-compiled test classes for production
 
-```bash
-# Test basic API
-./test-api.sh
+## 🐛 **Troubleshooting**
 
-# Test raw script execution
-./test-raw-script.sh
+### **Common Issues**
 
-# Test file upload functionality
-./test-file-upload.sh
-```
+1. **"Java compiler not available"**
+   - Ensure you're running with JDK, not JRE
+   - Check `JAVA_HOME` environment variable
 
-## Dependencies
+2. **"Compilation failed"**
+   - Check your Java syntax
+   - Ensure all required imports are present
+   - Verify the `execute` method signature
+   - Make sure class name matches filename for file uploads
 
-- Spring Boot 3.2.0
-- Selenium WebDriver 4.15.0
-- WebDriverManager 5.6.2
-- Lombok
-- Jackson for JSON processing
+3. **"WebDriver not found"**
+   - Ensure Chrome/Firefox is installed
+   - Check WebDriverManager configuration
 
-## Documentation
+4. **"Port already in use"**
+   - Change the server port in `application.properties`
+   - Kill existing processes using the port
 
-- **API Documentation:** `API_DOCUMENTATION.md` - Complete API reference
-- **File Upload Guide:** `FILE_UPLOAD_GUIDE.md` - File upload functionality guide
+## 📚 **Next Steps**
 
-## Error Handling
+1. **Add Authentication**: Implement API key or token-based auth
+2. **Script Validation**: Add syntax and security validation
+3. **Test Libraries**: Support for TestNG or JUnit
+4. **Parallel Execution**: Run multiple tests simultaneously
+5. **Reporting**: Generate detailed test reports
+6. **Screenshots**: Implement proper screenshot capture
 
-The API returns appropriate HTTP status codes and error messages:
+---
 
-- `200 OK`: Script executed successfully
-- `400 Bad Request`: Invalid request parameters or script compilation errors
-- `500 Internal Server Error`: Server-side errors
-
-## Security Considerations
-
-- Scripts are executed in a controlled environment
-- Timeout limits prevent infinite execution
-- Headless mode is recommended for production
-- Screenshots are saved to specified directories only
-- Script compilation errors are caught and reported
-
-## License
-
-This project is licensed under the MIT License.
+**Simple, Direct, and Effective** - Execute your Selenium test scripts with ease!

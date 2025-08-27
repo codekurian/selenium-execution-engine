@@ -1,13 +1,14 @@
-# Use RHEL 8 with Oracle JDK as base image
-FROM registry.access.redhat.com/ubi8/openjdk-17:latest
+# Use RHEL 8 with Oracle JDK 17 as base image
+FROM ubi8/openjdk-17:latest
 
 # Set working directory
 WORKDIR /app
 
-# Install required packages for Selenium
-RUN microdnf update -y && \
-    microdnf install -y \
+# Install necessary packages for Selenium
+RUN dnf update -y && \
+    dnf install -y \
     wget \
+    curl \
     unzip \
     xvfb \
     libXcomposite \
@@ -25,25 +26,33 @@ RUN microdnf update -y && \
     at-spi2-atk \
     gtk3 \
     nss \
-    && microdnf clean all
+    && dnf clean all
 
-# Copy Gradle wrapper files
-COPY gradlew .
-COPY gradle gradle
-COPY gradle.properties gradle.properties
+# Download and install Chrome
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | rpm --import - && \
+    echo "[google-chrome]" > /etc/yum.repos.d/google-chrome.repo && \
+    echo "name=google-chrome" >> /etc/yum.repos.d/google-chrome.repo && \
+    echo "baseurl=http://dl.google.com/linux/chrome/rpm/stable/x86_64" >> /etc/yum.repos.d/google-chrome.repo && \
+    echo "enabled=1" >> /etc/yum.repos.d/google-chrome.repo && \
+    echo "gpgcheck=1" >> /etc/yum.repos.d/google-chrome.repo && \
+    dnf install -y google-chrome-stable && \
+    dnf clean all
+
+# Copy Gradle files first for better caching
+COPY gradle/ gradle/
+COPY gradlew build.gradle gradle.properties ./
+
+# Download dependencies
+RUN ./gradlew dependencies --no-daemon
 
 # Copy source code
-COPY src src
-COPY build.gradle .
-
-# Make gradlew executable
-RUN chmod +x gradlew
+COPY src/ src/
 
 # Build the application
-RUN ./gradlew build -x test
+RUN ./gradlew build -x test --no-daemon
 
-# Create directory for screenshots
-RUN mkdir -p /tmp/screenshots
+# Create directories for scripts and screenshots
+RUN mkdir -p /tmp/test-scripts /tmp/screenshots
 
 # Expose port
 EXPOSE 8080

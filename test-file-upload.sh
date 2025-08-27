@@ -1,48 +1,55 @@
 #!/bin/bash
 
-# Test script for File Upload Script Execution API
+echo "🚀 Testing File Upload Functionality"
+echo "==================================="
 
-BASE_URL="http://localhost:8081"
+# Wait for the application to be ready
+echo "⏳ Waiting for application to start..."
+sleep 5
 
-echo "Testing File Upload Script Execution API"
-echo "======================================="
+# Test 1: Health Check
+echo ""
+echo "📋 Test 1: Health Check"
+echo "----------------------"
+curl -s http://localhost:8081/api/selenium/health | jq '.'
 
-# Health check
-echo "1. Health check..."
-curl -s "$BASE_URL/api/selenium/health"
-echo -e "\n"
-
-# Test 1: Upload simple navigation script
-echo "2. Testing file upload with simple navigation script..."
-curl -X POST "$BASE_URL/api/selenium/execute-file" \
-  -F "file=@scripts/simple-navigation.java" \
-  -F "scriptType=java" \
+# Test 2: Upload and Execute Java File
+echo ""
+echo "📋 Test 2: Upload and Execute Java File"
+echo "--------------------------------------"
+curl -X POST http://localhost:8081/api/selenium/execute-file \
+  -F "file=@SampleTest.java" \
   -F "browser=chrome" \
   -F "headless=true" \
   -F "timeoutSeconds=30" | jq '.'
 
-echo -e "\n"
-
-# Test 2: Upload Google search script
-echo "3. Testing file upload with Google search script..."
-curl -X POST "$BASE_URL/api/selenium/execute-file" \
-  -F "file=@scripts/google-search.java" \
-  -F "scriptType=java" \
-  -F "browser=chrome" \
-  -F "headless=true" \
-  -F "timeoutSeconds=30" \
-  -F "screenshotPath=/tmp/screenshots/google-search-file.png" | jq '.'
-
-echo -e "\n"
-
-# Test 3: Upload form interaction script
-echo "4. Testing file upload with form interaction script..."
-curl -X POST "$BASE_URL/api/selenium/execute-file" \
-  -F "file=@scripts/form-interaction.java" \
-  -F "scriptType=java" \
+# Test 3: Upload with Custom Script Name
+echo ""
+echo "📋 Test 3: Upload with Custom Script Name"
+echo "----------------------------------------"
+curl -X POST http://localhost:8081/api/selenium/execute-file \
+  -F "file=@SampleTest.java" \
+  -F "scriptName=CustomTest" \
   -F "browser=chrome" \
   -F "headless=true" \
   -F "timeoutSeconds=30" | jq '.'
 
-echo -e "\n"
-echo "File upload script execution tests completed!"
+echo ""
+echo "✅ File upload tests completed!"
+echo ""
+echo "📊 File Upload Features:"
+echo "  ✅ Upload actual Java files"
+echo "  ✅ Automatic script name from filename"
+echo "  ✅ Custom script name support"
+echo "  ✅ File content extraction"
+echo "  ✅ Same execution pipeline"
+echo ""
+echo "🌐 API Endpoint:"
+echo "  - POST http://localhost:8081/api/selenium/execute-file"
+echo ""
+echo "📝 Usage:"
+echo "  curl -X POST http://localhost:8081/api/selenium/execute-file \\"
+echo "    -F \"file=@YourTest.java\" \\"
+echo "    -F \"browser=chrome\" \\"
+echo "    -F \"headless=true\" \\"
+echo "    -F \"timeoutSeconds=30\""
